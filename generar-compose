@@ -1,0 +1,47 @@
+#!/bin/env python
+
+
+def gen_server(build_context: str, dockerfile: str):
+    return f"\n  server:\n    build:\n      context: {build_context}\n      dockerfile: {dockerfile}"
+
+
+def gen_client(id: int, build_context: str, dockerfile: str):
+    return f"\n  client{id}:\n    build:\n      context: {build_context}\n      dockerfile: {dockerfile}\n    depends_on:\n      - server"
+
+
+def gen_compose(
+    clients: int, build_context: str, client_dockerfile: str, server_dockerfile: str
+):
+    compose = "services:"
+    compose += gen_server(build_context, server_dockerfile)
+    for c in range(0, clients):
+        compose += gen_client(c, build_context, client_dockerfile)
+
+    return compose
+
+
+def main():
+    import sys
+
+    BUILD_CONTEXT = "."
+    SERVER_DOCKERFILE = "server/Dockerfile"
+    CLIENT_DOCKERFILE = "client/Dockerfile"
+
+    args = sys.argv
+
+    if len(args) != 3:
+        print(f"Usage:\n{args[0]} <filename> <clients>")
+        sys.exit(1)
+
+    filename = args[1]
+    clients = int(args[2])
+
+    with open(filename, "w") as f:
+        compose = gen_compose(
+            clients, BUILD_CONTEXT, CLIENT_DOCKERFILE, SERVER_DOCKERFILE
+        )
+        f.write(compose)
+
+
+if __name__ == "__main__":
+    main()
