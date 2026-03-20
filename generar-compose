@@ -6,7 +6,8 @@ def gen_server(build_context: str, dockerfile: str):
 
 
 def gen_client(id: int, build_context: str, dockerfile: str):
-    return f"\n  client{id}:\n    build:\n      context: {build_context}\n      dockerfile: {dockerfile}\n    depends_on:\n      - server"
+    client = f"client{id}"
+    return f"\n  {client}:\n    build:\n      context: {build_context}\n      dockerfile: {dockerfile}\n    depends_on:\n      - server\n    environment:\n      - CLI_ID={id}"
 
 
 def gen_compose(
