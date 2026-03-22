@@ -1,7 +1,7 @@
 #!/bin/env python
 
 
-def gen_server(build_context: str, dockerfile: str):
+def gen_server(build_context: str, dockerfile: str, network: str):
     return (
         f"\n  server:"
         f"\n    container_name: server"
@@ -10,10 +10,12 @@ def gen_server(build_context: str, dockerfile: str):
         f"\n      dockerfile: {dockerfile}"
         f"\n    volumes:"
         f"\n      - ./server/config.ini:/config.ini"
+        f"\n    networks:"
+        f"\n      - {network}"
     )
 
 
-def gen_client(id: int, build_context: str, dockerfile: str):
+def gen_client(id: int, build_context: str, dockerfile: str, network: str):
     client = f"client{id}"
     return (
         f"\n  {client}:"
@@ -28,16 +30,34 @@ def gen_client(id: int, build_context: str, dockerfile: str):
         f"\n      - CLI_ID={id}"
         f"\n    volumes:"
         f"\n      - ./client/config.yaml:/config.yaml"
+        f"\n    networks:"
+        f"\n      - {network}"
     )
 
 
+def gen_network(network: str):
+    # fmt: off
+    return (
+        "\nnetworks:"
+        f"\n  {network}:"
+        f"\n    name: {network}"
+    )
+    # fmt: on
+
+
 def gen_compose(
-    clients: int, build_context: str, client_dockerfile: str, server_dockerfile: str
+    clients: int,
+    build_context: str,
+    client_dockerfile: str,
+    server_dockerfile: str,
+    network: str,
 ):
     compose = "services:"
-    compose += gen_server(build_context, server_dockerfile)
+    compose += gen_server(build_context, server_dockerfile, network)
     for c in range(1, clients + 1):
-        compose += gen_client(c, build_context, client_dockerfile)
+        compose += gen_client(c, build_context, client_dockerfile, network)
+
+    compose += gen_network(network)
 
     return compose
 
@@ -48,6 +68,7 @@ def main():
     BUILD_CONTEXT = "."
     SERVER_DOCKERFILE = "server/Dockerfile"
     CLIENT_DOCKERFILE = "client/Dockerfile"
+    NETWORK = "tp0_network"
 
     args = sys.argv
 
@@ -60,7 +81,7 @@ def main():
 
     with open(filename, "w") as f:
         compose = gen_compose(
-            clients, BUILD_CONTEXT, CLIENT_DOCKERFILE, SERVER_DOCKERFILE
+            clients, BUILD_CONTEXT, CLIENT_DOCKERFILE, SERVER_DOCKERFILE, NETWORK
         )
         f.write(compose)
 
