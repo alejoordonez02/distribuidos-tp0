@@ -1,0 +1,51 @@
+#!/bin/env python
+
+
+def get_val(line: str) -> str:
+    return line.split("=")[1].strip()
+
+
+def get_server_address(config_path: str) -> tuple[str, int]:
+    with open(config_path, "r") as f:
+        ip = None
+        port = None
+        for line in f:
+            if "SERVER_IP" in line:
+                ip = get_val(line)
+            if "SERVER_PORT" in line:
+                port = int(get_val(line))
+
+        if not (ip and port):
+            raise RuntimeError("failed to get server's address")
+
+    return ip, port
+
+
+def valid_echo_server(server_ip: str, server_port: int, network: str) -> bool:
+    import subprocess
+
+    msg = "hello world"
+    cmd = f"docker run -i --rm --network={network} subfuzion/netcat -w 1 {server_ip} {server_port}"
+    response = subprocess.run(
+        cmd.split(" "),
+        capture_output=True,
+        input=msg,
+        text=True,
+    ).stdout.strip()
+
+    return msg == response
+
+
+def main():
+    NETWORK = "tp0_default"
+    CONFIG_PATH = "server/config.ini"
+
+    server_ip, server_port = get_server_address(CONFIG_PATH)
+    valid = valid_echo_server(server_ip, server_port, NETWORK)
+
+    result = "success" if valid else "fail"
+    print(f"action: test_echo_server | result: {result}")
+
+
+if __name__ == "__main__":
+    main()
