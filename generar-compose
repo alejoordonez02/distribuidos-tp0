@@ -21,6 +21,7 @@ def gen_client(id: int, build_context: str, dockerfile: str):
         f"\n    build:"
         f"\n      context: {build_context}"
         f"\n      dockerfile: {dockerfile}"
+        f"\n    entrypoint: /client"
         f"\n    depends_on:"
         f"\n      - server"
         f"\n    environment:"
