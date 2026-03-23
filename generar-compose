@@ -1,43 +1,88 @@
 #!/bin/env python
 
 
-def gen_server(build_context: str, dockerfile: str):
+def gen_server(
+    name: str,
+    image: str,
+    entrypoint: str,
+    network_name: str,
+):
     return (
-        f"\n  server:"
-        f"\n    container_name: server"
-        f"\n    build:"
-        f"\n      context: {build_context}"
-        f"\n      dockerfile: {dockerfile}"
-        f"\n    volumes:"
-        f"\n      - ./server/config.ini:/config.ini"
+        f"\n  {name}:"
+        f"\n    container_name: {name}"
+        f"\n    image: {image}"
+        f"\n    entrypoint: {entrypoint}"
+        f"\n    environment:"
+        f"\n      - PYTHONUNBUFFERED=1"
+        f"\n      - LOGGING_LEVEL=DEBUG"
+        f"\n    networks:"
+        f"\n      - {network_name}"
     )
 
 
-def gen_client(id: int, build_context: str, dockerfile: str):
-    client = f"client{id}"
+def gen_client(
+    n: int,
+    name_prefix: str,
+    image: str,
+    entrypoint: str,
+    network_name: str,
+):
+    client = f"{name_prefix}{n}"
+
     return (
         f"\n  {client}:"
         f"\n    container_name: {client}"
-        f"\n    build:"
-        f"\n      context: {build_context}"
-        f"\n      dockerfile: {dockerfile}"
-        f"\n    entrypoint: /client"
+        f"\n    image: {image}"
+        f"\n    entrypoint: {entrypoint}"
+        f"\n    environment:"
+        f"\n      - CLI_ID={n}"
+        f"\n      - CLI_LOG_LEVEL=DEBUG"
+        f"\n    networks:"
+        f"\n      - {network_name}"
         f"\n    depends_on:"
         f"\n      - server"
-        f"\n    environment:"
-        f"\n      - CLI_ID={id}"
-        f"\n    volumes:"
-        f"\n      - ./client/config.yaml:/config.yaml"
+    )
+
+
+def gen_network(name: str, subnet: str):
+    return (
+        f"\n  {name}:"
+        f"\n    ipam:"
+        f"\n      driver: default"
+        f"\n      config:"
+        f"\n        - subnet: {subnet}"
     )
 
 
 def gen_compose(
-    clients: int, build_context: str, client_dockerfile: str, server_dockerfile: str
+    name: str,
+    client_amount: int,
+    client_name_prefix: str,
+    client_image: str,
+    client_entrypoint: str,
+    server_name_prefix: str,
+    server_image: str,
+    server_entrypoint: str,
+    network_name: str,
+    subnet: str,
 ):
-    compose = "services:"
-    compose += gen_server(build_context, server_dockerfile)
-    for c in range(1, clients + 1):
-        compose += gen_client(c, build_context, client_dockerfile)
+    compose = f"name: {name}\nservices:"
+
+    compose += (
+        gen_server(server_name_prefix, server_image, server_entrypoint, network_name)
+        + "\n"
+    )
+
+    for i in range(1, client_amount + 1):
+        compose += (
+            gen_client(
+                i, client_name_prefix, client_image, client_entrypoint, network_name
+            )
+            + "\n"
+        )
+
+    compose += "\nnetworks:"
+    compose += gen_network(network_name, subnet)
 
     return compose
 
@@ -45,9 +90,17 @@ def gen_compose(
 def main():
     import sys
 
-    BUILD_CONTEXT = "."
-    SERVER_DOCKERFILE = "server/Dockerfile"
-    CLIENT_DOCKERFILE = "client/Dockerfile"
+    NAME = "tp0"
+    CLIENT_NAME_PREFIX = "client"
+    CLIENT_IMAGE = "client:latest"
+    CLIENT_ENTRYPOINT = "/client"
+
+    SERVER_NAME_PREFIX = "server"
+    SERVER_IMAGE = "server:latest"
+    SERVER_ENTRYPOINT = "python3 /main.py"
+
+    NETWORK_NAME = "testing_net"
+    SUBNET = "172.25.125.0/24"
 
     args = sys.argv
 
@@ -56,12 +109,22 @@ def main():
         sys.exit(1)
 
     filename = args[1]
-    clients = int(args[2])
+    client_amount = int(args[2])
+
+    compose = gen_compose(
+        NAME,
+        client_amount,
+        CLIENT_NAME_PREFIX,
+        CLIENT_IMAGE,
+        CLIENT_ENTRYPOINT,
+        SERVER_NAME_PREFIX,
+        SERVER_IMAGE,
+        SERVER_ENTRYPOINT,
+        NETWORK_NAME,
+        SUBNET,
+    )
 
     with open(filename, "w") as f:
-        compose = gen_compose(
-            clients, BUILD_CONTEXT, CLIENT_DOCKERFILE, SERVER_DOCKERFILE
-        )
         f.write(compose)
 
 
