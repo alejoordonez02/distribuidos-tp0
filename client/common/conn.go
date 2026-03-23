@@ -3,10 +3,14 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"net"
 )
 
-const LEN_SIZE = 2
+const (
+	BUF_SIZE     = 1024
+	LEN_SIZE int = 2
+)
 
 type Conn struct {
 	skt net.Conn
@@ -35,6 +39,28 @@ func (c *Conn) Send(msg Serializable) error {
 	return nil
 }
 
+func (c *Conn) Recv() (Response, error) {
+	var bytes []byte
+	read, err := c.readAtLeast(bytes, LEN_SIZE)
+	if err != nil {
+		return Response{}, err
+	}
+
+	len_msg := int(binary.BigEndian.Uint32(bytes[:LEN_SIZE]))
+	missing := len_msg + LEN_SIZE - read
+	read, err = c.readAtLeast(bytes[read:], missing)
+	if err != nil {
+		return Response{}, err
+	}
+
+	response, err := Deserialize(bytes)
+	if err != nil {
+		return Response{}, err
+	}
+
+	return response, nil
+}
+
 func (c *Conn) Close() error {
 	err := c.skt.Close()
 	if err != nil {
@@ -56,4 +82,18 @@ func (c *Conn) send(bytes []byte) error {
 	}
 
 	return nil
+}
+
+func (c *Conn) readAtLeast(buf []byte, atLeast int) (int, error) {
+	read := 0
+	for read < atLeast {
+		_read, err := c.skt.Read(buf[read:])
+		if err != nil {
+			return -1, err
+		}
+
+		read += _read
+	}
+
+	return read, errors.New("failed to read from socket")
 }
