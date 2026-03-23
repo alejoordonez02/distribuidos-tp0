@@ -84,9 +84,13 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) Run() {
 	c.createClientSocket()
-	defer c.conn.Close()
+	// defer c.conn.Close()
 	c.keepRunning = true
 	go c.shouldKeepRunning()
+
+	log.Infof("action: send_message | result: in_progress | dni: %v | numero: %v",
+		0, 0, // TODO
+	)
 
 	err := c.conn.Send(&c.bet)
 	if err != nil {
@@ -96,6 +100,14 @@ func (c *Client) Run() {
 		)
 		return
 	}
+
+	log.Infof("action: send_message | result: success | dni: %v | numero: %v",
+		0, 0, // TODO
+	)
+
+	log.Infof("action: receive_message | result: in_progress | dni: %v | numero: %v",
+		0, 0, // TODO
+	)
 
 	response, err := c.conn.Recv()
 	if err != nil {

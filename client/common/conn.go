@@ -3,7 +3,8 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
+	"fmt"
+	"io"
 	"net"
 )
 
@@ -29,10 +30,10 @@ func NewConn(addr string) (Conn, error) {
 func (c *Conn) Send(msg Serializable) error {
 	bytes := new(bytes.Buffer)
 	bytes_msg := msg.Serialize()
-	len := len(bytes_msg)
+	len := uint16(len(bytes_msg))
 
 	binary.Write(bytes, binary.BigEndian, len)
-	bytes.Write(msg.Serialize())
+	bytes.Write(bytes_msg)
 
 	c.send(bytes.Bytes())
 
@@ -40,20 +41,26 @@ func (c *Conn) Send(msg Serializable) error {
 }
 
 func (c *Conn) Recv() (Response, error) {
-	var bytes []byte
-	read, err := c.readAtLeast(bytes, LEN_SIZE)
+	bytes := make([]byte, BUF_SIZE)
+	err := c.readExact(bytes, LEN_SIZE)
 	if err != nil {
 		return Response{}, err
 	}
 
-	len_msg := int(binary.BigEndian.Uint32(bytes[:LEN_SIZE]))
-	missing := len_msg + LEN_SIZE - read
-	read, err = c.readAtLeast(bytes[read:], missing)
+	len_msg := int(binary.BigEndian.Uint16(bytes[:LEN_SIZE]))
+	if LEN_SIZE+len_msg > BUF_SIZE {
+		return Response{},
+			fmt.Errorf(
+				"message too big, size is %v and payload buf size is %v",
+				len_msg, BUF_SIZE-LEN_SIZE)
+	}
+
+	err = c.readExact(bytes[LEN_SIZE:], len_msg)
 	if err != nil {
 		return Response{}, err
 	}
 
-	response, err := Deserialize(bytes)
+	response, err := Deserialize(bytes[LEN_SIZE : LEN_SIZE+len_msg])
 	if err != nil {
 		return Response{}, err
 	}
@@ -62,12 +69,7 @@ func (c *Conn) Recv() (Response, error) {
 }
 
 func (c *Conn) Close() error {
-	err := c.skt.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.skt.Close()
 }
 
 func (c *Conn) send(bytes []byte) error {
@@ -84,16 +86,11 @@ func (c *Conn) send(bytes []byte) error {
 	return nil
 }
 
-func (c *Conn) readAtLeast(buf []byte, atLeast int) (int, error) {
-	read := 0
-	for read < atLeast {
-		_read, err := c.skt.Read(buf[read:])
-		if err != nil {
-			return -1, err
-		}
-
-		read += _read
+func (c *Conn) readExact(buf []byte, amount int) error {
+	if amount == 0 {
+		return nil
 	}
 
-	return read, nil
+	_, err := io.ReadFull(c.skt, buf[:amount])
+	return err
 }
