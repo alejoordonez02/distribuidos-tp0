@@ -1,10 +1,14 @@
-# id: 1
 server:
   address: "server:12345"
 loop:
-  amount: 5
-  period: "5s"
+  amount: 500
+  period: "150ms"
 log:
   level: "INFO"
 batch:
   maxAmount: 10
+bet:
+  number: 7574
+  name: "Alejo"
+  surname: "Ordoñez"
+  birth: "2002-09-18"
