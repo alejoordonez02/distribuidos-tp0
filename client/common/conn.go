@@ -95,5 +95,5 @@ func (c *Conn) readAtLeast(buf []byte, atLeast int) (int, error) {
 		read += _read
 	}
 
-	return read, errors.New("failed to read from socket")
+	return read, nil
 }
