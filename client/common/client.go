@@ -45,6 +45,11 @@ func (c *Client) shouldKeepRunning() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
+
+	log.Infof("action: stop | result: in_progress | client_id: %v",
+		c.config.ID,
+	)
+
 	c.keepRunning = false
 }
 
