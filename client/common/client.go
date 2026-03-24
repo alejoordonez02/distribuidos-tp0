@@ -70,7 +70,7 @@ func (c *Client) Run() {
 			return
 		}
 
-		response, err := c.conn.Recv()
+		ack, err := c.conn.Recv()
 		if err != nil {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
@@ -81,12 +81,53 @@ func (c *Client) Run() {
 
 		c.conn.Close()
 
-		if response.Ack {
-			log.Infof("action: receive_message | result: success | client_id: %v", c.config.ID)
+		switch m := ack.(type) {
+		case Ack:
+			if m.Ok {
+				log.Infof("action: send_bet | result: success | client_id: %v", c.config.ID)
+			} else {
+				log.Infof("action: send_bet | result: fail | client_id: %v", c.config.ID)
+			}
+		default:
+			log.Errorf("action: receive_message | result: fail | client_id: %v | error: unexpected message",
+				c.config.ID,
+			)
+			return
 		}
+
 	}
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	c.createClientConn()
+	query := NewQuery()
+	if err := c.conn.Send(query); err != nil {
+		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	response, err := c.conn.Recv()
+	if err != nil {
+		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	switch m := response.(type) {
+	case Response:
+		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", m.WinnerAmount)
+	default:
+		log.Errorf("action: receive_message | result: fail | client_id: %v | error: unexpected message",
+			c.config.ID,
+		)
+		return
+	}
+
+	c.conn.Close()
 }
 
 func (c *Client) shouldKeepRunning() error {

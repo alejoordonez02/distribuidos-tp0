@@ -39,16 +39,16 @@ func (c *Conn) Send(msg Serializable) error {
 	return nil
 }
 
-func (c *Conn) Recv() (Response, error) {
+func (c *Conn) Recv() (Message, error) {
 	bytes := make([]byte, BUF_SIZE)
 	err := c.readExact(bytes, LEN_SIZE)
 	if err != nil {
-		return Response{}, err
+		return Ack{}, err
 	}
 
 	len_msg := int(binary.BigEndian.Uint16(bytes[:LEN_SIZE]))
 	if LEN_SIZE+len_msg > BUF_SIZE {
-		return Response{},
+		return Ack{},
 			fmt.Errorf(
 				"message too big, size is %v and payload buf size is %v",
 				len_msg, BUF_SIZE-LEN_SIZE)
@@ -56,12 +56,12 @@ func (c *Conn) Recv() (Response, error) {
 
 	err = c.readExact(bytes[LEN_SIZE:], len_msg)
 	if err != nil {
-		return Response{}, err
+		return Ack{}, err
 	}
 
 	response, err := Deserialize(bytes[LEN_SIZE : LEN_SIZE+len_msg])
 	if err != nil {
-		return Response{}, err
+		return Ack{}, err
 	}
 
 	return response, nil

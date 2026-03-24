@@ -7,9 +7,13 @@ import (
 )
 
 const (
-	TYPE_BET_BATCH     = 0x00
-	TYPE_RESPONSE_ACK  = 0x01
-	TYPE_RESPONSE_NACK = 0x02
+	TYPE_BET_BATCH = 0x00
+	TYPE_ACK       = 0x01
+	TYPE_NACK      = 0x02
+	TYPE_QUERY     = 0x03
+	TYPE_RESPONSE  = 0x04
+
+	LEN_WINNER_AMOUNT = 2
 )
 
 type Serializable interface {
@@ -28,14 +32,21 @@ func (bets BetBatch) Serialize() []byte {
 	return serial.Bytes()
 }
 
-func Deserialize(bytes []byte) (Response, error) {
+func (q Query) Serialize() []byte {
+	serial := []byte{TYPE_QUERY}
+	return serial
+}
+
+func Deserialize(bytes []byte) (Message, error) {
 	switch bytes[0] {
-	case TYPE_RESPONSE_ACK:
-		return Response{true}, nil
-	case TYPE_RESPONSE_NACK:
-		return Response{false}, nil
+	case TYPE_ACK:
+		return Ack{true}, nil
+	case TYPE_NACK:
+		return Ack{false}, nil
+	case TYPE_RESPONSE:
+		return deserializeResponse(bytes[1:]), nil
 	default:
-		return Response{}, errors.New("unknown response type")
+		return Ack{}, errors.New("unknown response type")
 	}
 }
 
@@ -57,4 +68,10 @@ func serializeStringInto(s string, buf *bytes.Buffer) {
 	serial_len := byte(uint8(len(s)))
 	buf.WriteByte(serial_len)
 	buf.WriteString(s)
+}
+
+func deserializeResponse(serial []byte) Response {
+	WinnerAmount := int(binary.BigEndian.Uint16(serial[:LEN_WINNER_AMOUNT]))
+	response := Response{WinnerAmount}
+	return response
 }
