@@ -9,6 +9,8 @@ type Bet struct {
 	Number    string
 }
 
+type BetBatch []Bet
+
 func NewBet(
 	Agency string,
 	FirstName string,

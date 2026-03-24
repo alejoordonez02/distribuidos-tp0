@@ -1,6 +1,7 @@
 package common
 
 import (
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,44 +14,73 @@ var log = logging.MustGetLogger("log")
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
-	BetAgency     string
-	BetFirstName  string
-	BetLastName   string
-	BetDocument   string
-	BetBirthDate  string
-	BetNumber     string
+	ID             string
+	ServerAddress  string
+	LoopAmount     int
+	LoopPeriod     time.Duration
+	BatchMaxAmount int
 }
 
 // Client Entity that encapsulates how
 type Client struct {
 	config      ClientConfig
-	bet         Bet
 	conn        Conn
+	storage     *Storage
 	keepRunning bool
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
-	bet := NewBet(
-		config.BetAgency,
-		config.BetFirstName,
-		config.BetLastName,
-		config.BetDocument,
-		config.BetBirthDate,
-		config.BetNumber,
-	)
-
 	client := &Client{
 		config:      config,
-		bet:         bet,
 		keepRunning: false,
 	}
+
 	return client
+}
+
+// StartClientLoop Send messages to the client until some time threshold is met
+func (c *Client) Run() {
+	c.createClientSocket()
+	c.createClientStorage()
+	defer c.conn.Close()
+	defer c.storage.Close()
+	c.keepRunning = true
+	go c.shouldKeepRunning()
+
+	time.Sleep(time.Second * 10)
+	bets, err := c.storage.LoadBets(c.config.BatchMaxAmount)
+	if err != io.EOF && err != nil {
+		log.Errorf("action: load_bets | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	if err := c.conn.Send(bets); err != nil {
+		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	response, err := c.conn.Recv()
+	if err != nil {
+		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	if response.Ack {
+		// log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+		// 	c.bet.Document, c.bet.Number,
+		// )
+	}
 }
 
 func (c *Client) shouldKeepRunning() error {
@@ -90,46 +120,18 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) Run() {
-	c.createClientSocket()
-	// defer c.conn.Close()
-	c.keepRunning = true
-	go c.shouldKeepRunning()
-
-	log.Infof("action: send_message | result: in_progress | dni: %v | numero: %v",
-		c.bet.Document, c.bet.Number,
-	)
-
-	err := c.conn.Send(&c.bet)
+func (c *Client) createClientStorage() error {
+	// las variables constanteadas de storage deberían venir
+	// por cfg pero fiaca ahora mismo
+	storage, err := NewStorage()
 	if err != nil {
-		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
+		log.Criticalf(
+			"action: create_storage | result: fail | client_id: %v | error: %v",
 			c.config.ID,
 			err,
 		)
-		return
 	}
 
-	log.Infof("action: send_message | result: success | dni: %v | numero: %v",
-		c.bet.Document, c.bet.Number,
-	)
-
-	log.Infof("action: receive_message | result: in_progress | dni: %v | numero: %v",
-		c.bet.Document, c.bet.Number,
-	)
-
-	response, err := c.conn.Recv()
-	if err != nil {
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
-	}
-
-	if response.Ack {
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			c.bet.Document, c.bet.Number,
-		)
-	}
+	c.storage = storage
+	return nil
 }
