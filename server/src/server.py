@@ -40,6 +40,7 @@ class Server:
             )
 
         else:
+            client.send(Response(False))
             raise RuntimeError(f"unsupported message {msg.__dict__}")
 
     def stop(self, _signum, _frame):

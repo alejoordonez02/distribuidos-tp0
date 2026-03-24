@@ -42,20 +42,18 @@ func NewClient(config ClientConfig) *Client {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) Run() {
-	c.createClientSocket()
 	c.createClientStorage()
-	defer c.conn.Close()
 	defer c.storage.Close()
 	c.keepRunning = true
 	go c.shouldKeepRunning()
 
 	for {
 		bets, err := c.storage.LoadBets(c.config.BatchMaxAmount)
-		if err == io.EOF {
+		if err == io.EOF && len(bets) == 0 {
 			break
 		}
 
-		if err != nil {
+		if err != io.EOF && err != nil {
 			log.Errorf("action: load_bets | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
@@ -80,12 +78,14 @@ func (c *Client) Run() {
 			return
 		}
 
+		c.conn.Close()
+
 		if response.Ack {
-			// log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			// 	c.bet.Document, c.bet.Number,
-			// )
+			log.Infof("action: receive_message | result: success | client_id: %v", c.config.ID)
 		}
 	}
+
+	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
 func (c *Client) shouldKeepRunning() error {
@@ -111,7 +111,7 @@ func (c *Client) shouldKeepRunning() error {
 // CreateClientSocket Initializes client socket. In case of
 // failure, error is printed in stdout/stderr and exit 1
 // is returned
-func (c *Client) createClientSocket() error {
+func (c *Client) createClientConn() error {
 	conn, err := NewConn(c.config.ServerAddress)
 	if err != nil {
 		log.Criticalf(
