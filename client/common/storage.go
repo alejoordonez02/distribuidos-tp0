@@ -77,28 +77,28 @@ func (s *Storage) LoadBets(maxAmount int) (BetBatch, error) {
 }
 
 func (s *Storage) getBetFromRecord(record []string) (Bet, int, error) {
-	bet_fields := 6
+	bet_fields := 5
 	if len(record) != bet_fields {
 		return Bet{}, 0, fmt.Errorf(
 			"missing fields, there are %v and bet is %v fields",
 			len(record), bet_fields)
 	}
 
-	Agency := record[0]
-	FirstName := record[1]
-	LastName := record[2]
-	Document := record[3]
-	BirthDate := record[4]
-	Number := record[5]
+	// Agency := record[0]
+	FirstName := record[0]
+	LastName := record[1]
+	Document := record[2]
+	BirthDate := record[3]
+	Number := record[4]
 
-	bet := NewBet(Agency, FirstName, LastName, Document, BirthDate, Number)
+	bet := NewBet(FirstName, LastName, Document, BirthDate, Number)
 	betSize := bet.getSize()
 
 	return bet, betSize, nil
 }
 
 func (b *Bet) getSize() int {
-	betSize := len(b.Agency) + len(b.FirstName) + len(b.LastName) +
+	betSize := len(b.FirstName) + len(b.LastName) +
 		len(b.Document) + len(b.BirthDate) + len(b.Number)
 
 	return betSize
