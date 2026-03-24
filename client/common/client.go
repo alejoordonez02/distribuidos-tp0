@@ -98,7 +98,7 @@ func (c *Client) Run() {
 	go c.shouldKeepRunning()
 
 	log.Infof("action: send_message | result: in_progress | dni: %v | numero: %v",
-		0, 0, // TODO
+		c.bet.Document, c.bet.Number,
 	)
 
 	err := c.conn.Send(&c.bet)
@@ -111,11 +111,11 @@ func (c *Client) Run() {
 	}
 
 	log.Infof("action: send_message | result: success | dni: %v | numero: %v",
-		0, 0, // TODO
+		c.bet.Document, c.bet.Number,
 	)
 
 	log.Infof("action: receive_message | result: in_progress | dni: %v | numero: %v",
-		0, 0, // TODO
+		c.bet.Document, c.bet.Number,
 	)
 
 	response, err := c.conn.Recv()
@@ -129,7 +129,7 @@ func (c *Client) Run() {
 
 	if response.Ack {
 		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			0, 0, // TODO
+			c.bet.Document, c.bet.Number,
 		)
 	}
 }
