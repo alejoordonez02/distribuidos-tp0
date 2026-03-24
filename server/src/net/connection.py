@@ -50,7 +50,7 @@ class Conn:
             serial += self.__recv_exact(len_msg)
             msg = deserialize(serial[LEN_SIZE : LEN_SIZE + len_msg])
             logging.info(
-                f"action: receive_message | result: success | ip: {self.peer_addr[0]} | msg: {msg}"
+                f"action: receive_message | result: success | ip: {self.peer_addr[0]} | msg: {msg.__dict__}"
             )
 
             return msg

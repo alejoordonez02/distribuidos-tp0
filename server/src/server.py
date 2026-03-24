@@ -1,10 +1,10 @@
-import signal
 import logging
-
-from .response import Response
+import signal
 
 from .bet import Bet
-from .net import Rendezvous, Conn
+from .net import Conn, Rendezvous
+from .response import Response
+from .storage import store_bets
 
 
 class Server:
@@ -28,12 +28,14 @@ class Server:
     def __handle_client_connection(self, client: Conn):
         msg = client.recv()
         if isinstance(msg, Bet):
-            logging.info(
-                f"action: apuesta_recibida | result: success | numero: {msg.number}"
-            )
             client.send(Response(True))
+            store_bets([msg])
+            logging.info(
+                f"action: apuesta_almacenada | result: success | dni: {msg.document} | numero: {msg.number}"
+            )
+
         else:
-            raise RuntimeError(f"unsupported message {msg}")
+            raise RuntimeError(f"unsupported message {msg.__dict__}")
 
     def stop(self, _signum, _frame):
         self._keep_running = False
