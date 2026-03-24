@@ -49,37 +49,42 @@ func (c *Client) Run() {
 	c.keepRunning = true
 	go c.shouldKeepRunning()
 
-	time.Sleep(time.Second * 10)
-	bets, err := c.storage.LoadBets(c.config.BatchMaxAmount)
-	if err != io.EOF && err != nil {
-		log.Errorf("action: load_bets | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
-	}
+	for {
+		bets, err := c.storage.LoadBets(c.config.BatchMaxAmount)
+		if err == io.EOF {
+			break
+		}
 
-	if err := c.conn.Send(bets); err != nil {
-		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
-	}
+		if err != nil {
+			log.Errorf("action: load_bets | result: fail | client_id: %v | error: %v",
+				c.config.ID,
+				err,
+			)
+			return
+		}
 
-	response, err := c.conn.Recv()
-	if err != nil {
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
-	}
+		if err := c.conn.Send(bets); err != nil {
+			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
+				c.config.ID,
+				err,
+			)
+			return
+		}
 
-	if response.Ack {
-		// log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-		// 	c.bet.Document, c.bet.Number,
-		// )
+		response, err := c.conn.Recv()
+		if err != nil {
+			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+				c.config.ID,
+				err,
+			)
+			return
+		}
+
+		if response.Ack {
+			// log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+			// 	c.bet.Document, c.bet.Number,
+			// )
+		}
 	}
 }
 
