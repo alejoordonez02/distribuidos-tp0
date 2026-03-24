@@ -44,6 +44,7 @@ def gen_client(
         f"\n      - path: {env_file}"
         f"\n    volumes:"
         f"\n      - {config}"
+        f"\n      - ./.data/agency-{n}.csv:/agency.csv"
         f"\n    networks:"
         f"\n      - {network_name}"
         f"\n    depends_on:"
