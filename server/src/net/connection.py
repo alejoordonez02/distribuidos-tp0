@@ -1,4 +1,4 @@
-from socket import socket
+from socket import socket, SHUT_RDWR
 import logging
 
 
@@ -14,6 +14,7 @@ BUF_SIZE = 1024
 
 class Conn:
     def __init__(self, skt: socket, peer_addr: tuple[str, int]):
+        self._keep_running = True
         self.skt = skt
         self.peer_addr = peer_addr
 
@@ -45,7 +46,8 @@ class Conn:
 
             return msg
         except OSError as e:
-            logging.error(f"action: receive_message | result: fail | error: {e}")
+            if self._keep_running:
+                logging.error(f"action: receive_message | result: fail | error: {e}")
 
     def __recv_exact(self, amount: int) -> bytes:
         buf = b""
@@ -56,3 +58,8 @@ class Conn:
             missing -= len(received)
 
         return buf
+
+    def stop(self):
+        self._keep_running = False
+        self.skt.shutdown(SHUT_RDWR)
+        self.skt.close()
