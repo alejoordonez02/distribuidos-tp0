@@ -1,6 +1,15 @@
-from ...response import Response
+from ...ack import Ack
 from ...bet import Bet
-from .protocol import BYTE_ORDER, LEN_BATCH_SIZE, LEN_STR_SIZE, MsgType, LEN_TYPE
+from ...query import Query
+from ...response import Response
+from .protocol import (
+    BYTE_ORDER,
+    LEN_BATCH_SIZE,
+    LEN_STR_SIZE,
+    LEN_WINNER_AMOUNT,
+    MsgType,
+    LEN_TYPE,
+)
 
 
 class SerialError(Exception):
@@ -8,7 +17,9 @@ class SerialError(Exception):
 
 
 def serialize(msg) -> bytes:
-    if isinstance(msg, Response):
+    if isinstance(msg, Ack):
+        return __serialize_ack(msg)
+    elif isinstance(msg, Response):
         return __serialize_response(msg)
     else:
         raise SerialError(f"unsupported serialization for message {msg}")
@@ -18,15 +29,27 @@ def deserialize(serial: bytes):
     msg_type = serial[:LEN_TYPE]
     if msg_type == MsgType.TYPE_BET_BATCH.value:
         return __deserialize_bet_batch(serial[LEN_TYPE:])
+    elif msg_type == MsgType.TYPE_QUERY:
+        return __deserialize_query(serial[LEN_TYPE:])
     else:
         raise SerialError(f"unknown message type {msg_type}")
 
 
-def __serialize_response(response: Response) -> bytes:
-    if response.ack:
-        serial = MsgType.TYPE_RESPONSE_ACK.value
+def __serialize_ack(ack: Ack) -> bytes:
+    if ack.ok:
+        serial = MsgType.TYPE_ACK.value
     else:
-        serial = MsgType.TYPE_RESPONSE_NACK.value
+        serial = MsgType.TYPE_NACK.value
+
+    return serial
+
+
+def __serialize_response(response: Response) -> bytes:
+    serial = MsgType.TYPE_RESPONSE.value
+    serial_winner_amount = response.winner_amount.to_bytes(
+        LEN_WINNER_AMOUNT, byteorder=BYTE_ORDER
+    )
+    serial += serial_winner_amount
 
     return serial
 
@@ -42,6 +65,10 @@ def __deserialize_bet_batch(serial: bytes) -> list[Bet]:
         ptr += consumed
 
     return bets
+
+
+def __deserialize_query(_: bytes) -> Query:
+    return Query()
 
 
 def __deserialize_bet(serial: bytes) -> tuple[Bet, int]:

@@ -3,7 +3,8 @@ import signal
 
 from .bet import Bet
 from .net import Conn, Rendezvous, SerialError
-from .response import Response
+from .ack import Ack
+from .query import Query
 from .storage import store_bets
 
 
@@ -33,14 +34,14 @@ class Server:
             return
 
         if isinstance(msg, list) and all(isinstance(bet, Bet) for bet in msg):
-            client.send(Response(True))
+            client.send(Ack(True))
             store_bets(msg)
             logging.info(
                 f"action: apuesta_recibida | result: success | cantidad: {len(msg)}"
             )
 
         else:
-            client.send(Response(False))
+            client.send(Ack(False))
             raise RuntimeError(f"unsupported message {msg.__dict__}")
 
     def stop(self, _signum, _frame):
