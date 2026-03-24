@@ -2,7 +2,7 @@ import logging
 import signal
 
 from .bet import Bet
-from .net import Conn, Rendezvous
+from .net import Conn, Rendezvous, SerialError
 from .response import Response
 from .storage import store_bets
 
@@ -26,12 +26,17 @@ class Server:
                 self.__handle_client_connection(client)
 
     def __handle_client_connection(self, client: Conn):
-        msg = client.recv()
-        if isinstance(msg, Bet):
+        try:
+            msg = client.recv()
+        except SerialError as e:
+            logging.info(f"action: receive_message | result: fail | error: {e}")
+            return
+
+        if isinstance(msg, list) and all(isinstance(bet, Bet) for bet in msg):
             client.send(Response(True))
-            store_bets([msg])
+            store_bets(msg)
             logging.info(
-                f"action: apuesta_almacenada | result: success | dni: {msg.document} | numero: {msg.number}"
+                f"action: apuesta_recibida | result: success | cantidad: {len(msg)}"
             )
 
         else:

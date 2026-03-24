@@ -1,1 +1,1 @@
-from .serials import serialize, deserialize
+from .serials import serialize, deserialize, SerialError

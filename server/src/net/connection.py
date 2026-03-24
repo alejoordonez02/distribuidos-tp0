@@ -26,16 +26,6 @@ class Conn:
 
         self.skt.sendall(serial)
 
-    def __recv_exact(self, amount: int) -> bytes:
-        buf = b""
-        missing = amount
-        while missing:
-            received = self.skt.recv(missing)
-            buf += received
-            missing -= len(received)
-
-        return buf
-
     def recv(self):
         """
         Read message from a specific client socket and closes the socket
@@ -56,3 +46,13 @@ class Conn:
             return msg
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
+
+    def __recv_exact(self, amount: int) -> bytes:
+        buf = b""
+        missing = amount
+        while missing:
+            received = self.skt.recv(missing)
+            buf += received
+            missing -= len(received)
+
+        return buf

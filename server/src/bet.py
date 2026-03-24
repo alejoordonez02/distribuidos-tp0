@@ -32,17 +32,3 @@ class Bet:
 def has_won(bet: Bet) -> bool:
     """Checks whether a bet won the prize or not."""
     return bet.number == LOTTERY_WINNER_NUMBER
-
-
-# old
-class Person:
-    def __init__(self, name: str, surname: str, birth: str):
-        self.name = name
-        self.surnname = surname
-        self.birth = birth
-
-
-class BetOld:
-    def __init__(self, number: int, person: Person):
-        self.number = number
-        self.person = person
