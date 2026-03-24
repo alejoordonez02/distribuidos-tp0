@@ -37,10 +37,12 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
 	v.BindEnv("log", "level")
+	v.BindEnv("bet", "agency")
+	v.BindEnv("bet", "first_name")
+	v.BindEnv("bet", "last_name")
+	v.BindEnv("bet", "document")
+	v.BindEnv("bet", "birthdate")
 	v.BindEnv("bet", "number")
-	v.BindEnv("bet", "name")
-	v.BindEnv("bet", "surname")
-	v.BindEnv("bet", "birth")
 
 	// Try to read configuration from config file. If config file
 	// does not exists then ReadInConfig will fail but configuration
@@ -91,10 +93,12 @@ func PrintConfig(v *viper.Viper) {
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
-		v.GetUint64("bet.number"),
-		v.GetString("bet.name"),
-		v.GetString("bet.surname"),
-		v.GetString("bet.birth"),
+		v.GetString("bet.agency"),
+		v.GetString("bet.first_name"),
+		v.GetString("bet.last_name"),
+		v.GetString("bet.document"),
+		v.GetString("bet.birthdate"),
+		v.GetString("bet.number"),
 	)
 }
 
@@ -116,10 +120,12 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
-		BetNumber:     v.GetUint64("bet.number"),
-		BetName:       v.GetString("bet.name"),
-		BetSurname:    v.GetString("bet.surname"),
-		BetBirth:      v.GetString("bet.birth"),
+		BetAgency:     v.GetString("bet.agency"),
+		BetFirstName:  v.GetString("bet.first_name"),
+		BetLastName:   v.GetString("bet.last_name"),
+		BetDocument:   v.GetString("bet.document"),
+		BetBirthDate:  v.GetString("bet.birthdate"),
+		BetNumber:     v.GetString("bet.number"),
 	}
 
 	client := common.NewClient(clientConfig)

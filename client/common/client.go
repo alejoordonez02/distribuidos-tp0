@@ -17,10 +17,12 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
-	BetNumber     uint64
-	BetName       string
-	BetSurname    string
-	BetBirth      string
+	BetAgency     string
+	BetFirstName  string
+	BetLastName   string
+	BetDocument   string
+	BetBirthDate  string
+	BetNumber     string
 }
 
 // Client Entity that encapsulates how
@@ -34,7 +36,14 @@ type Client struct {
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
-	bet := NewBet(config.BetNumber, config.BetName, config.BetSurname, config.BetBirth)
+	bet := NewBet(
+		config.BetAgency,
+		config.BetFirstName,
+		config.BetLastName,
+		config.BetDocument,
+		config.BetBirthDate,
+		config.BetNumber,
+	)
 
 	client := &Client{
 		config:      config,

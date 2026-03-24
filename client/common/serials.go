@@ -2,7 +2,6 @@ package common
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 )
 
@@ -17,12 +16,16 @@ type Serializable interface {
 }
 
 func (b *Bet) Serialize() []byte {
-	bytes := new(bytes.Buffer)
-	binary.Write(bytes, binary.BigEndian, TYPE_BET)
-	binary.Write(bytes, binary.BigEndian, b.Number)
-	b.Person.serializeInto(bytes)
+	var serial bytes.Buffer
+	serial.WriteByte(TYPE_BET)
+	serializeStringInto(b.Agency, &serial)
+	serializeStringInto(b.FirstName, &serial)
+	serializeStringInto(b.LastName, &serial)
+	serializeStringInto(b.Document, &serial)
+	serializeStringInto(b.BirthDate, &serial)
+	serializeStringInto(b.Number, &serial)
 
-	return bytes.Bytes()
+	return serial.Bytes()
 }
 
 func Deserialize(bytes []byte) (Response, error) {
@@ -36,13 +39,10 @@ func Deserialize(bytes []byte) (Response, error) {
 	}
 }
 
-func (p *Person) serializeInto(buf *bytes.Buffer) {
-	writeString(p.Name, buf)
-	writeString(p.Surname, buf)
-	binary.Write(buf, binary.BigEndian, p.birth)
-}
-
-func writeString(s string, buf *bytes.Buffer) {
-	binary.Write(buf, binary.BigEndian, len(s))
+// Serialize string into bytes and write them into the buffer,
+// prepending one byte with the length of the string bytes
+func serializeStringInto(s string, buf *bytes.Buffer) {
+	serial_len := byte(uint8(len(s)))
+	buf.WriteByte(serial_len)
 	buf.WriteString(s)
 }

@@ -35,8 +35,7 @@ func (c *Conn) Send(msg Serializable) error {
 	binary.Write(bytes, binary.BigEndian, len)
 	bytes.Write(bytes_msg)
 
-	c.send(bytes.Bytes())
-
+	c.sendAll(bytes.Bytes())
 	return nil
 }
 
@@ -72,7 +71,7 @@ func (c *Conn) Close() error {
 	return c.skt.Close()
 }
 
-func (c *Conn) send(bytes []byte) error {
+func (c *Conn) sendAll(bytes []byte) error {
 	sent := 0
 	for sent < len(bytes) {
 		_sent, err := c.skt.Write(bytes[sent:])

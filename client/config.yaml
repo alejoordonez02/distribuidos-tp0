@@ -8,7 +8,9 @@ log:
 batch:
   maxAmount: 10
 bet:
+  agency: 1989
+  first_name: "Alejo"
+  last_name: "Ordoñez"
+  document: 44480134
+  birthdate: "2002-09-18"
   number: 7574
-  name: "Alejo"
-  surname: "Ordoñez"
-  birth: "2002-09-18"
