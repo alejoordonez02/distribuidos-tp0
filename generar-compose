@@ -27,6 +27,7 @@ def gen_client(
     name_prefix: str,
     image: str,
     entrypoint: str,
+    env_file: str,
     config: str,
     network_name: str,
 ):
@@ -39,6 +40,8 @@ def gen_client(
         f"\n    entrypoint: {entrypoint}"
         f"\n    environment:"
         f"\n      - CLI_ID={n}"
+        f"\n    env_file:"
+        f"\n      - path: {env_file}"
         f"\n    volumes:"
         f"\n      - {config}"
         f"\n    networks:"
@@ -64,6 +67,7 @@ def gen_compose(
     client_name_prefix: str,
     client_image: str,
     client_entrypoint: str,
+    client_env_file: str,
     client_config: str,
     server_name_prefix: str,
     server_image: str,
@@ -92,6 +96,7 @@ def gen_compose(
                 client_name_prefix,
                 client_image,
                 client_entrypoint,
+                client_env_file,
                 client_config,
                 network_name,
             )
@@ -111,6 +116,7 @@ def main():
     CLIENT_NAME_PREFIX = "client"
     CLIENT_IMAGE = "client:latest"
     CLIENT_ENTRYPOINT = "/client"
+    CLIENT_ENV_FILE = "./client/bet.env"
     CLIENT_CONFIG = "./client/config.yaml:/config.yaml"
 
     SERVER_NAME_PREFIX = "server"
@@ -136,6 +142,7 @@ def main():
         CLIENT_NAME_PREFIX,
         CLIENT_IMAGE,
         CLIENT_ENTRYPOINT,
+        CLIENT_ENV_FILE,
         CLIENT_CONFIG,
         SERVER_NAME_PREFIX,
         SERVER_IMAGE,

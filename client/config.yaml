@@ -7,10 +7,3 @@ log:
   level: "INFO"
 batch:
   maxAmount: 10
-bet:
-  agency: 1989
-  first_name: "Alejo"
-  last_name: "Ordoñez"
-  document: 44480134
-  birthdate: "2002-09-18"
-  number: 7574

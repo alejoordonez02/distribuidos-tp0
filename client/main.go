@@ -37,12 +37,12 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
 	v.BindEnv("log", "level")
-	v.BindEnv("bet", "agency")
-	v.BindEnv("bet", "first_name")
-	v.BindEnv("bet", "last_name")
-	v.BindEnv("bet", "document")
-	v.BindEnv("bet", "birthdate")
-	v.BindEnv("bet", "number")
+	v.BindEnv("bet.agency", "AGENCY")
+	v.BindEnv("bet.first_name", "FIRST_NAME")
+	v.BindEnv("bet.last_name", "LAST_NAME")
+	v.BindEnv("bet.document", "DOCUMENT")
+	v.BindEnv("bet.birthdate", "BIRTHDATE")
+	v.BindEnv("bet.number", "NUMBER")
 
 	// Try to read configuration from config file. If config file
 	// does not exists then ReadInConfig will fail but configuration
