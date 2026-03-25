@@ -78,8 +78,8 @@ def __deserialize_bet(serial: bytes) -> tuple[Bet, int]:
     Returns the deserialized bet along with the bytes it consumed.
     """
     ptr = 0
-    # agency, consumed = __deserialize_string(serial[ptr:])
-    # ptr += consumed
+    agency, consumed = __deserialize_string(serial[ptr:])
+    ptr += consumed
     first_name, consumed = __deserialize_string(serial[ptr:])
     ptr += consumed
     last_name, consumed = __deserialize_string(serial[ptr:])
@@ -91,7 +91,7 @@ def __deserialize_bet(serial: bytes) -> tuple[Bet, int]:
     number, consumed = __deserialize_string(serial[ptr:])
     ptr += consumed
 
-    bet = Bet("1", first_name, last_name, document, birthdate, number)  # TODO
+    bet = Bet(agency, first_name, last_name, document, birthdate, number)  # TODO
     return bet, ptr
 
 

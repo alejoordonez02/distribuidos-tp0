@@ -41,7 +41,9 @@ func (s *Storage) Close() {
 //
 // If `MAX_SIZE` is reached, the exceeding bet is buffered
 // so that it can be returned in a later call to the method.
-func (s *Storage) LoadBets(maxAmount int) (BetBatch, error) {
+//
+// All returned bets share the passed `Agency`.
+func (s *Storage) LoadBets(maxAmount int, Agency string) (BetBatch, error) {
 	log.Infof("action: load_bets | result: in_progress")
 	batch := make([]Bet, 0, maxAmount)
 	batch_size := 0
@@ -62,7 +64,7 @@ func (s *Storage) LoadBets(maxAmount int) (BetBatch, error) {
 			return nil, err
 		}
 
-		bet, record_size, err := s.getBetFromRecord(record)
+		bet, record_size, err := s.getBetFromRecord(record, Agency)
 
 		if batch_size+record_size > MAX_SIZE {
 			s.buf = &bet
@@ -76,7 +78,7 @@ func (s *Storage) LoadBets(maxAmount int) (BetBatch, error) {
 	return batch, nil
 }
 
-func (s *Storage) getBetFromRecord(record []string) (Bet, int, error) {
+func (s *Storage) getBetFromRecord(record []string, Agency string) (Bet, int, error) {
 	bet_fields := 5
 	if len(record) != bet_fields {
 		return Bet{}, 0, fmt.Errorf(
@@ -91,7 +93,7 @@ func (s *Storage) getBetFromRecord(record []string) (Bet, int, error) {
 	BirthDate := record[3]
 	Number := record[4]
 
-	bet := NewBet(FirstName, LastName, Document, BirthDate, Number)
+	bet := NewBet(Agency, FirstName, LastName, Document, BirthDate, Number)
 	betSize := bet.getSize()
 
 	return bet, betSize, nil

@@ -52,7 +52,7 @@ func Deserialize(bytes []byte) (Message, error) {
 
 func (b *Bet) serializeInto(buf *bytes.Buffer) []byte {
 	// buf.WriteByte(TYPE_BET)
-	// serializeStringInto(b.Agency, buf)
+	serializeStringInto(b.Agency, buf)
 	serializeStringInto(b.FirstName, buf)
 	serializeStringInto(b.LastName, buf)
 	serializeStringInto(b.Document, buf)

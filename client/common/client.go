@@ -48,7 +48,7 @@ func (c *Client) Run() {
 	go c.shouldKeepRunning()
 
 	for {
-		bets, err := c.storage.LoadBets(c.config.BatchMaxAmount)
+		bets, err := c.storage.LoadBets(c.config.BatchMaxAmount, c.config.ID)
 		if err == io.EOF && len(bets) == 0 {
 			break
 		}
