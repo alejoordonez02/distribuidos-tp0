@@ -1,12 +1,13 @@
 import logging
 import signal
+from typing import Optional
 
+from .ack import Ack
 from .bet import Bet, has_won
 from .net import Conn, Rendezvous, SerialError
-from .ack import Ack
 from .query import Query
-from .storage import load_bets, store_bets
 from .response import Response
+from .storage import load_bets, store_bets
 
 AGENCIES = 5
 
@@ -25,14 +26,14 @@ class Server:
         self.listener.start()
         self.__run()
 
-    def __add_pending(self, client_id: int, addr: tuple[str, int]) -> int | None:
+    def __add_pending(self, client_id: int, addr: tuple[str, int]) -> Optional[int]:
         for c_id, a in self.pending:
             if (c_id, a) == (client_id, addr):
                 return c_id
 
         self.pending.append((client_id, addr))
 
-    def __get_client_id(self, client_addr: tuple[str, int]) -> int | None:
+    def __get_client_id(self, client_addr: tuple[str, int]) -> Optional[int]:
         for client_id, addr in self.pending:
             if client_addr == addr:
                 return client_id

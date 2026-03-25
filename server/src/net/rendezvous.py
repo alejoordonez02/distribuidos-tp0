@@ -1,5 +1,6 @@
-from socket import socket, AF_INET, SOCK_STREAM, SHUT_RDWR
 import logging
+from socket import AF_INET, SHUT_RDWR, SOCK_STREAM, socket
+from typing import Optional
 
 from .connection import Conn
 
@@ -14,7 +15,7 @@ class Rendezvous:
     def start(self):
         self.skt.listen(self.listen_backlog)
 
-    def accept_connection(self) -> tuple[Conn, tuple[str, int]] | None:
+    def accept_connection(self) -> Optional[tuple[Conn, tuple[str, int]]]:
         """
         Returns a newly welcomed connection along with its address.
 
