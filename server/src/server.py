@@ -83,7 +83,7 @@ class Server:
         recipients = {}
         for b in load_bets():
             won = has_won(b)
-            recipients[b.agency] += won
+            recipients[b.agency] = recipients.get(b.agency, 0) + won
 
         for c in self.current:
             client_id = self.__get_client_id(c.peer_addr)
