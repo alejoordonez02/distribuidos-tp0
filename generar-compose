@@ -2,6 +2,7 @@
 
 
 def gen_server(
+    client_amount: int,
     name: str,
     image: str,
     entrypoint: str,
@@ -15,6 +16,7 @@ def gen_server(
         f"\n    entrypoint: {entrypoint}"
         f"\n    environment:"
         f"\n      - PYTHONUNBUFFERED=1"
+        f"\n      - CLIENT_AMOUNT={client_amount}"
         f"\n    volumes:"
         f"\n      - {config}"
         f"\n    networks:"
@@ -81,6 +83,7 @@ def gen_compose(
 
     compose += (
         gen_server(
+            client_amount,
             server_name_prefix,
             server_image,
             server_entrypoint,

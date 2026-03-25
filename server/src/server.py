@@ -9,15 +9,14 @@ from .query import Query
 from .response import Response
 from .storage import load_bets, store_bets
 
-AGENCIES = 5
-
 
 class Server:
-    def __init__(self, port, listen_backlog):
+    def __init__(self, port, listen_backlog, agency_amount):
         self._keep_running = False
         self.listener = Rendezvous(("", port), listen_backlog)
         self.current: list[Conn] = []
         self.pending: set[tuple[int, str]] = set()  # agency, ip
+        self.agency_amount = agency_amount
 
     def start(self):
         self._keep_running = True
@@ -43,7 +42,7 @@ class Server:
                 return client_id
 
     def __run(self):
-        pending_agencies = AGENCIES
+        pending_agencies = self.agency_amount
         while self._keep_running and pending_agencies:
             if not (conn_info := self.listener.accept_connection()):
                 continue
