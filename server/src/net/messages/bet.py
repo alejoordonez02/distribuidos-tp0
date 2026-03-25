@@ -1,8 +1,5 @@
 import datetime
 
-# Simulated winner number in the lottery contest.
-LOTTERY_WINNER_NUMBER = 7574
-
 
 class Bet:
     """A lottery bet registry."""
@@ -27,8 +24,3 @@ class Bet:
         self.document = document
         self.birthdate = datetime.date.fromisoformat(birthdate)
         self.number = int(number)
-
-
-def has_won(bet: Bet) -> bool:
-    """Checks whether a bet won the prize or not."""
-    return bet.number == LOTTERY_WINNER_NUMBER

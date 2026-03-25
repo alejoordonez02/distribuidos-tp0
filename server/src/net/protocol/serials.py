@@ -1,7 +1,4 @@
-from ...ack import Ack
-from ...bet import Bet
-from ...query import Query
-from ...response import Response
+from ..messages import Ack, Bet, Query, Response,
 from .protocol import (
     BYTE_ORDER,
     LEN_BATCH_SIZE,

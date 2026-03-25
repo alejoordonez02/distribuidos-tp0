@@ -3,11 +3,9 @@ import logging
 import signal
 from typing import Optional
 
-from .ack import Ack
-from .bet import Bet, has_won
+from .net import Ack, Bet, Query, Response
+from .has_won import has_won
 from .net import Conn, Rendezvous, SerialError
-from .query import Query
-from .response import Response
 from .storage import load_bets, store_bets
 
 

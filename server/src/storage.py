@@ -1,6 +1,6 @@
 import csv
 
-from .bet import Bet
+from .net import Bet
 
 STORAGE_FILEPATH = "./bets.csv"
 
