@@ -59,7 +59,7 @@ class Conn:
 
         return buf
 
-    def stop(self):
+    def close(self):
         self._keep_running = False
         self.skt.shutdown(SHUT_RDWR)
         self.skt.close()

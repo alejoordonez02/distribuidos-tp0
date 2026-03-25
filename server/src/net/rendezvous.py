@@ -14,9 +14,9 @@ class Rendezvous:
     def start(self):
         self.skt.listen(self.listen_backlog)
 
-    def accept_connection(self):
+    def accept_connection(self) -> tuple[Conn, tuple[str, int]] | None:
         """
-        Accept new connections
+        Returns a newly welcomed connection along with its address.
 
         Function blocks until a connection to a client is made.
         Then connection created is printed and returned
@@ -27,7 +27,7 @@ class Rendezvous:
             logging.info(
                 f"action: accept_connections | result: success | ip: {addr[0]}"
             )
-            return Conn(c, addr)
+            return Conn(c, addr), addr
         except OSError as e:
             if self._keep_running:
                 logging.info(f"action: accept_connections | result: fail | error: {e}")
