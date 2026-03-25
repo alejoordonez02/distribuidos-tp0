@@ -53,7 +53,9 @@ class Server:
             done = self.__handle_client_connection(conn, addr)
             pending_agencies -= done
 
-        self.__send_results()
+        if self._keep_running:
+            logging.info("action: sorteo | result: success")
+            self.__send_results()
 
     def __handle_client_connection(self, client: Conn, addr: tuple[str, int]) -> bool:
         """
