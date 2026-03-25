@@ -17,7 +17,7 @@ class Server:
         self._keep_running = False
         self.listener = Rendezvous(("", port), listen_backlog)
         self.current: list[Conn] = []
-        self.pending: list[tuple[int, tuple[str, int]]] = []
+        self.pending: set[tuple[int, str]] = set()  # agency, ip
 
     def start(self):
         self._keep_running = True
@@ -26,16 +26,20 @@ class Server:
         self.listener.start()
         self.__run()
 
-    def __add_pending(self, client_id: int, addr: tuple[str, int]) -> Optional[int]:
-        for c_id, a in self.pending:
-            if (c_id, a) == (client_id, addr):
-                return c_id
+    def __add_pending(self, client_id: int, addr: tuple[str, int]) -> None:
+        """
+        Adds a client to the list of clients to which results are sent at the end.
 
-        self.pending.append((client_id, addr))
+        As clients communicate with the server initiating different TCP sockets, ports
+        may not be always the same, thus the IP address of the client is used for
+        uniquely identifying it. The `client_id` is used for filtering the results that
+        are to be sent to each client.
+        """
+        self.pending.add((client_id, addr[0]))
 
     def __get_client_id(self, client_addr: tuple[str, int]) -> Optional[int]:
         for client_id, addr in self.pending:
-            if client_addr == addr:
+            if client_addr[0] == addr:
                 return client_id
 
     def __run(self):
