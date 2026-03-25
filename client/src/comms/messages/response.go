@@ -1,4 +1,4 @@
-package common
+package messages
 
 type Response struct {
 	WinnerAmount int

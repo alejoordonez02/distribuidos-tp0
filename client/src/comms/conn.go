@@ -1,4 +1,4 @@
-package common
+package comms
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/comms/messages"
 )
 
 const (
@@ -39,16 +41,16 @@ func (c *Conn) Send(msg Serializable) error {
 	return nil
 }
 
-func (c *Conn) Recv() (Message, error) {
+func (c *Conn) Recv() (messages.Message, error) {
 	bytes := make([]byte, BUF_SIZE)
 	err := c.readExact(bytes, LEN_SIZE)
 	if err != nil {
-		return Ack{}, err
+		return messages.Ack{}, err
 	}
 
 	len_msg := int(binary.BigEndian.Uint16(bytes[:LEN_SIZE]))
 	if LEN_SIZE+len_msg > BUF_SIZE {
-		return Ack{},
+		return messages.Ack{},
 			fmt.Errorf(
 				"message too big, size is %v and payload buf size is %v",
 				len_msg, BUF_SIZE-LEN_SIZE)
@@ -56,12 +58,12 @@ func (c *Conn) Recv() (Message, error) {
 
 	err = c.readExact(bytes[LEN_SIZE:], len_msg)
 	if err != nil {
-		return Ack{}, err
+		return messages.Ack{}, err
 	}
 
-	response, err := Deserialize(bytes[LEN_SIZE : LEN_SIZE+len_msg])
+	response, err := messages.Deserialize(bytes[LEN_SIZE : LEN_SIZE+len_msg])
 	if err != nil {
-		return Ack{}, err
+		return messages.Ack{}, err
 	}
 
 	return response, nil

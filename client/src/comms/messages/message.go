@@ -1,4 +1,4 @@
-package common
+package messages
 
 const (
 	MSG_RESPONSE = 0x10

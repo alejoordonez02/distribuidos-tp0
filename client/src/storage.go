@@ -1,10 +1,12 @@
-package common
+package src
 
 import (
 	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/comms/messages"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 type Storage struct {
 	file   *os.File
 	reader *csv.Reader
-	buf    *Bet
+	buf    *messages.Bet
 }
 
 func NewStorage() (*Storage, error) {
@@ -25,7 +27,7 @@ func NewStorage() (*Storage, error) {
 	}
 
 	reader := csv.NewReader(file)
-	var buf *Bet = nil
+	var buf *messages.Bet = nil
 
 	storage := Storage{file, reader, buf}
 	return &storage, nil
@@ -43,14 +45,14 @@ func (s *Storage) Close() {
 // so that it can be returned in a later call to the method.
 //
 // All returned bets share the passed `Agency`.
-func (s *Storage) LoadBets(maxAmount int, Agency string) (BetBatch, error) {
+func (s *Storage) LoadBets(maxAmount int, Agency string) (messages.BetBatch, error) {
 	log.Infof("action: load_bets | result: in_progress")
-	batch := make([]Bet, 0, maxAmount)
+	batch := make([]messages.Bet, 0, maxAmount)
 	batch_size := 0
 	if s.buf != nil {
 		batch = append(batch, *s.buf)
 		maxAmount--
-		batch_size += s.buf.getSize()
+		batch_size += s.buf.GetSize()
 		s.buf = nil
 	}
 
@@ -78,30 +80,22 @@ func (s *Storage) LoadBets(maxAmount int, Agency string) (BetBatch, error) {
 	return batch, nil
 }
 
-func (s *Storage) getBetFromRecord(record []string, Agency string) (Bet, int, error) {
+func (s *Storage) getBetFromRecord(record []string, Agency string) (messages.Bet, int, error) {
 	bet_fields := 5
 	if len(record) != bet_fields {
-		return Bet{}, 0, fmt.Errorf(
+		return messages.Bet{}, 0, fmt.Errorf(
 			"missing fields, there are %v and bet is %v fields",
 			len(record), bet_fields)
 	}
 
-	// Agency := record[0]
 	FirstName := record[0]
 	LastName := record[1]
 	Document := record[2]
 	BirthDate := record[3]
 	Number := record[4]
 
-	bet := NewBet(Agency, FirstName, LastName, Document, BirthDate, Number)
-	betSize := bet.getSize()
+	bet := messages.NewBet(Agency, FirstName, LastName, Document, BirthDate, Number)
+	betSize := bet.GetSize()
 
 	return bet, betSize, nil
-}
-
-func (b *Bet) getSize() int {
-	betSize := len(b.FirstName) + len(b.LastName) +
-		len(b.Document) + len(b.BirthDate) + len(b.Number)
-
-	return betSize
 }

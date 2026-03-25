@@ -1,4 +1,4 @@
-package common
+package src
 
 import (
 	"io"
@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
+
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/comms"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src/comms/messages"
 )
 
 var log = logging.MustGetLogger("log")
@@ -24,7 +27,7 @@ type ClientConfig struct {
 // Client Entity that encapsulates how
 type Client struct {
 	config      ClientConfig
-	conn        Conn
+	conn        comms.Conn
 	storage     *Storage
 	keepRunning bool
 }
@@ -82,7 +85,7 @@ func (c *Client) Run() {
 		c.conn.Close()
 
 		switch m := ack.(type) {
-		case Ack:
+		case messages.Ack:
 			if m.Ok {
 				log.Infof("action: send_bet | result: success | client_id: %v", c.config.ID)
 			} else {
@@ -99,7 +102,7 @@ func (c *Client) Run() {
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 	c.createClientConn()
-	query := NewQuery()
+	query := messages.NewQuery()
 	if err := c.conn.Send(query); err != nil {
 		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
 			c.config.ID,
@@ -118,7 +121,7 @@ func (c *Client) Run() {
 	}
 
 	switch m := response.(type) {
-	case Response:
+	case messages.Response:
 		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", m.WinnerAmount)
 	default:
 		log.Errorf("action: receive_message | result: fail | client_id: %v | error: unexpected message",
@@ -154,7 +157,7 @@ func (c *Client) shouldKeepRunning() error {
 // failure, error is printed in stdout/stderr and exit 1
 // is returned
 func (c *Client) createClientConn() error {
-	conn, err := NewConn(c.config.ServerAddress)
+	conn, err := comms.NewConn(c.config.ServerAddress)
 	if err != nil {
 		log.Criticalf(
 			"action: connect | result: fail | client_id: %v | error: %v",

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/common"
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/src"
 )
 
 var log = logging.MustGetLogger("log")
@@ -105,7 +105,7 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 
-	clientConfig := common.ClientConfig{
+	clientConfig := src.ClientConfig{
 		ServerAddress:  v.GetString("server.address"),
 		ID:             v.GetString("id"),
 		LoopAmount:     v.GetInt("loop.amount"),
@@ -113,6 +113,6 @@ func main() {
 		BatchMaxAmount: v.GetInt("batch.maxAmount"),
 	}
 
-	client := common.NewClient(clientConfig)
+	client := src.NewClient(clientConfig)
 	client.Run()
 }
