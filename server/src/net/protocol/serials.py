@@ -29,7 +29,7 @@ def deserialize(serial: bytes):
     msg_type = serial[:LEN_TYPE]
     if msg_type == MsgType.TYPE_BET_BATCH.value:
         return __deserialize_bet_batch(serial[LEN_TYPE:])
-    elif msg_type == MsgType.TYPE_QUERY:
+    elif msg_type == MsgType.TYPE_QUERY.value:
         return __deserialize_query(serial[LEN_TYPE:])
     else:
         raise SerialError(f"unknown message type {msg_type}")
