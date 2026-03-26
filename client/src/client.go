@@ -1,6 +1,7 @@
 package src
 
 import (
+	"errors"
 	"io"
 	"os"
 	"os/signal"
@@ -45,8 +46,17 @@ func NewClient(config ClientConfig) *Client {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) Run() {
-	c.createClientStorage()
+	err := c.createClientStorage()
+	if err != nil {
+		log.Criticalf(
+			"action: create_storage | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+	}
+
 	defer c.storage.Close()
+
 	c.keepRunning = true
 	go c.shouldKeepRunning()
 
@@ -58,79 +68,76 @@ func (c *Client) Run() {
 
 		if err != io.EOF && err != nil {
 			log.Errorf("action: load_bets | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
+				c.config.ID, err)
 			return
 		}
 
-		c.createClientConn()
-		if err := c.conn.Send(bets); err != nil {
-			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
+		if err := c.sendBetAndRecvAck(bets); err != nil {
+			log.Infof("action: send_bet | result: fail | client_id: %v | error: %v",
+				c.config.ID, err)
 			return
 		}
 
-		ack, err := c.conn.Recv()
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
-		}
-
-		c.conn.Close()
-
-		switch m := ack.(type) {
-		case messages.Ack:
-			if m.Ok {
-				log.Infof("action: send_bet | result: success | client_id: %v", c.config.ID)
-			} else {
-				log.Infof("action: send_bet | result: fail | client_id: %v", c.config.ID)
-			}
-		default:
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: unexpected message",
-				c.config.ID,
-			)
-			return
-		}
-
+		log.Infof("action: send_bet | result: success | client_id: %v", c.config.ID)
 	}
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+
+	response, err := c.sendQueryAndReceiveResponse()
+	if err != nil {
+		log.Infof("action: consulta_ganadores | result: failed | client_id: %v | error: %v",
+			c.config.ID, err)
+		return
+	}
+
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response.WinnerAmount)
+}
+
+func (c *Client) sendBetAndRecvAck(bets messages.BetBatch) error {
 	c.createClientConn()
+	defer c.conn.Close()
+
+	if err := c.conn.Send(bets); err != nil {
+		return err
+	}
+
+	ack, err := c.conn.Recv()
+	if err != nil {
+		return err
+	}
+
+	switch m := ack.(type) {
+	case messages.Ack:
+		if !m.Ok {
+			return errors.New("server responded with NACK")
+		}
+	default:
+		return errors.New("unexpected message")
+	}
+
+	return nil
+}
+
+func (c *Client) sendQueryAndReceiveResponse() (*messages.Response, error) {
+	c.createClientConn()
+	defer c.conn.Close()
+
 	query := messages.NewQuery()
 	if err := c.conn.Send(query); err != nil {
-		log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
+		return nil, err
 	}
 
 	response, err := c.conn.Recv()
 	if err != nil {
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
-		return
+		return nil, err
 	}
 
 	switch m := response.(type) {
 	case messages.Response:
-		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", m.WinnerAmount)
+		return &m, nil
 	default:
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: unexpected message",
-			c.config.ID,
-		)
-		return
+		return nil, errors.New("unexpected message")
 	}
-
-	c.conn.Close()
 }
 
 func (c *Client) shouldKeepRunning() error {
@@ -171,15 +178,9 @@ func (c *Client) createClientConn() error {
 }
 
 func (c *Client) createClientStorage() error {
-	// las variables constanteadas de storage deberían venir
-	// por cfg pero fiaca ahora mismo
 	storage, err := NewStorage()
 	if err != nil {
-		log.Criticalf(
-			"action: create_storage | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
+		return err
 	}
 
 	c.storage = storage
