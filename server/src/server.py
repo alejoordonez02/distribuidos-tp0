@@ -101,13 +101,12 @@ class Server:
             if self.pending:
                 return
 
-            results = {}
             for b in load_bets():
-                winners = results.get(b.agency, [""])
+                winners = self.results.get(b.agency, set(""))
                 if has_won(b):
                     winners.add(b.document)
 
-                results[b.agency] = winners
+                self.results[b.agency] = winners
 
             self.cv.notify_all()
 
