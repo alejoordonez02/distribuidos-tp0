@@ -16,3 +16,4 @@ class MsgType(Enum):
     TYPE_NACK = b"\x02"
     TYPE_QUERY = b"\x03"
     TYPE_RESPONSE = b"\x04"
+    TYPE_FIN = b"\x05"

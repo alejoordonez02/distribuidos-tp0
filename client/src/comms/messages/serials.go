@@ -20,6 +20,11 @@ func (bets BetBatch) Serialize() []byte {
 	return serial.Bytes()
 }
 
+func (f Fin) Serialize() []byte {
+	serial := []byte{protocol.TYPE_FIN}
+	return serial
+}
+
 func (q Query) Serialize() []byte {
 	serial := []byte{protocol.TYPE_QUERY}
 	return serial

@@ -1,4 +1,4 @@
-from ..messages import Ack, Bet, Query, Response,
+from ..messages import Ack, Bet, Query, Response, Fin
 from .protocol import (
     BYTE_ORDER,
     LEN_BATCH_SIZE,
@@ -28,6 +28,8 @@ def deserialize(serial: bytes):
         return __deserialize_bet_batch(serial[LEN_TYPE:])
     elif msg_type == MsgType.TYPE_QUERY.value:
         return __deserialize_query(serial[LEN_TYPE:])
+    elif msg_type == MsgType.TYPE_FIN.value:
+        return __deserialize_fin(serial[LEN_TYPE:])
     else:
         raise SerialError(f"unknown message type {msg_type}")
 
@@ -68,6 +70,10 @@ def __deserialize_query(_: bytes) -> Query:
     return Query()
 
 
+def __deserialize_fin(_: bytes) -> Fin:
+    return Fin()
+
+
 def __deserialize_bet(serial: bytes) -> tuple[Bet, int]:
     """
     Deserializes a byte slice into a bet.
@@ -88,7 +94,7 @@ def __deserialize_bet(serial: bytes) -> tuple[Bet, int]:
     number, consumed = __deserialize_string(serial[ptr:])
     ptr += consumed
 
-    bet = Bet(agency, first_name, last_name, document, birthdate, number)  # TODO
+    bet = Bet(agency, first_name, last_name, document, birthdate, number)
     return bet, ptr
 
 

@@ -48,11 +48,8 @@ func NewClient(config ClientConfig) *Client {
 func (c *Client) Run() {
 	err := c.createClientStorage()
 	if err != nil {
-		log.Criticalf(
-			"action: create_storage | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
+		log.Criticalf("action: create_storage | result: fail | client_id: %v | error: %v",
+			c.config.ID, err)
 	}
 
 	defer c.storage.Close()
@@ -83,43 +80,59 @@ func (c *Client) Run() {
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 
-	response, err := c.sendQueryAndReceiveResponse()
+	if err := c.sendFinAndRecvAck(); err != nil {
+		log.Infof("action: send_fin | result: failed | client_id: %v | error: %v",
+			c.config.ID, err)
+		return
+	}
+
+	log.Infof("action: send_fin | result: success | client_id: %v", c.config.ID)
+
+	response, err := c.sendQueryAndRecvResponse()
 	if err != nil {
 		log.Infof("action: consulta_ganadores | result: failed | client_id: %v | error: %v",
 			c.config.ID, err)
 		return
 	}
 
-	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", response.WinnerAmount)
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v",
+		response.WinnerAmount)
 }
 
 func (c *Client) sendBetAndRecvAck(bets messages.BetBatch) error {
-	c.createClientConn()
+	if err := c.createClientConn(); err != nil {
+		return err
+	}
+
 	defer c.conn.Close()
 
 	if err := c.conn.Send(bets); err != nil {
 		return err
 	}
 
-	ack, err := c.conn.Recv()
-	if err != nil {
+	return c.recvAck()
+}
+
+func (c *Client) sendFinAndRecvAck() error {
+	if err := c.createClientConn(); err != nil {
 		return err
 	}
 
-	switch m := ack.(type) {
-	case messages.Ack:
-		if !m.Ok {
-			return errors.New("server responded with NACK")
-		}
-	default:
-		return errors.New("unexpected message")
+	defer c.conn.Close()
+
+	fin := messages.NewFin()
+	if err := c.conn.Send(fin); err != nil {
+		return err
 	}
 
-	return nil
+	return c.recvAck()
 }
 
-func (c *Client) sendQueryAndReceiveResponse() (*messages.Response, error) {
-	c.createClientConn()
+func (c *Client) sendQueryAndRecvResponse() (*messages.Response, error) {
+	if err := c.createClientConn(); err != nil {
+		return nil, err
+	}
+
 	defer c.conn.Close()
 
 	query := messages.NewQuery()
@@ -138,6 +151,32 @@ func (c *Client) sendQueryAndReceiveResponse() (*messages.Response, error) {
 	default:
 		return nil, errors.New("unexpected message")
 	}
+}
+
+// Receives a message from the server, checks that its type is
+// actually `Ack`.
+//
+// This method assumes that the client already has an open
+// connection with the server, and it will not close it.
+//
+// Returns an error if the receive message is not an `Ack` or if
+// the server responds with a `Nack`.
+func (c *Client) recvAck() error {
+	ack, err := c.conn.Recv()
+	if err != nil {
+		return err
+	}
+
+	switch m := ack.(type) {
+	case messages.Ack:
+		if !m.Ok {
+			return errors.New("server responded with NACK")
+		}
+	default:
+		return errors.New("unexpected message")
+	}
+
+	return nil
 }
 
 func (c *Client) shouldKeepRunning() error {

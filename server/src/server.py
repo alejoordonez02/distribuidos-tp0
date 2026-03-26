@@ -1,11 +1,11 @@
-import threading
+from threading import Thread, Condition, Lock
 import logging
 import signal
 from typing import Optional
 
-from .net import Ack, Bet, Query, Response
+from .net import Ack, Bet, Query, Response, Fin
 from .has_won import has_won
-from .net import Conn, Rendezvous, SerialError
+from .net import Conn, Rendezvous
 from .storage import load_bets, store_bets
 
 
@@ -14,10 +14,14 @@ class Server:
         self._keep_running = False
         self.listener = Rendezvous(("", port), listen_backlog)
         self.current: list[Conn] = []
-        self.pending: set[tuple[int, str]] = set()  # agency, ip
+
+        self.id_address_map: set[tuple[int, str]] = set()
         self.agency_amount = agency_amount
-        self.mtx = threading.Lock()
-        self.sem = threading.Semaphore(0)
+        self.pending = agency_amount
+        self.results: dict[int, set[str]] = {}
+
+        self.mtx = Lock()
+        self.cv = Condition()
 
     def start(self):
         self._keep_running = True
@@ -35,90 +39,96 @@ class Server:
         uniquely identifying it. The `client_id` is used for filtering the results that
         are to be sent to each client.
         """
-        self.pending.add((client_id, addr[0]))
+        self.id_address_map.add((client_id, addr[0]))
 
     def __get_client_id(self, client_addr: tuple[str, int]) -> Optional[int]:
-        for client_id, addr in self.pending:
+        for client_id, addr in self.id_address_map:
             if client_addr[0] == addr:
                 return client_id
 
     def __run(self):
-        wait_to_send_results = threading.Thread(target=self.__send_results)
-        wait_to_send_results.start()
-
         while self._keep_running:
             if not (conn_info := self.listener.accept_connection()):
                 continue
 
-            conn, addr = conn_info
+            conn, _ = conn_info
             self.current.append(conn)
-            client_handle = threading.Thread(
-                target=self.__handle_client_connection, args=(conn, addr)
-            )
+            client_handle = Thread(target=self.__handle_client_connection, args=[conn])
             client_handle.start()
 
-    def __handle_client_connection(self, client: Conn, addr: tuple[str, int]):
-        """
-        Handles a client connection.
-        """
+    def __handle_client_connection(self, client: Conn):
         try:
             msg = client.recv()
-        except SerialError as e:
-            logging.info(f"action: receive_message | result: fail | error: {e}")
+        except Exception as e:
+            logging.error(f"action: receive_message | result: fail | error: {e}")
             return
 
-        if isinstance(msg, list) and all(
-            isinstance(bet, Bet) and bet.agency == msg[0].agency for bet in msg
-        ):
-            self.__handle_bets(msg, client, addr)
+        if isinstance(msg, list):
+            self.__handle_bets(msg, client)
+        elif isinstance(msg, Fin):
+            self.__handle_fin(msg, client)
         elif isinstance(msg, Query):
-            self.__handle_query(msg)
+            self.__handle_query(msg, client)
         else:
-            client.send(Ack(False))
-            raise RuntimeError(f"unsupported message {msg.__dict__}")
+            logging.error(
+                f"action: receive_message | result: fail | error: unsupported message {msg.__dict__}"
+            )
 
-    def __handle_bets(self, bets: list[Bet], client: Conn, addr: tuple[str, int]):
-        agency_number = bets[0].agency
-        self.__add_pending(agency_number, addr)
+    def __handle_bets(self, bets: list[Bet], client: Conn):
+        if not all(isinstance(b, Bet) and b.agency == bets[0].agency for b in bets):
+            client.send(Ack(False))
+            logging.error(
+                "action: apuesta_recibida | result: fail | error: malformed message"
+            )
+            return
+
         client.send(Ack(True))
+
+        client_id = bets[0].agency
+        client_addr = client.peer_addr
         with self.mtx:
+            self.__add_pending(client_id, client_addr)
             store_bets(bets)
 
         logging.info(
             f"action: apuesta_recibida | result: success | cantidad: {len(bets)}"
         )
 
-    def __handle_query(self, _: Query):
-        self.sem.release()
+    def __handle_fin(self, _: Fin, client: Conn):
+        client.send(Ack(True))
+        with self.cv:
+            self.pending -= 1
+            if self.pending:
+                return
 
-    def __send_results(self):
-        """
-        Sends each client their corresponding lottery results, once all of them are
-        done sending bets, after closing the `listener`.
-        """
-        for _ in range(0, self.agency_amount):
-            self.sem.acquire()
+            results = {}
+            for b in load_bets():
+                winners = results.get(b.agency, [""])
+                if has_won(b):
+                    winners.add(b.document)
 
-        self.__stop_listening()
+                results[b.agency] = winners
 
-        recipients = {}
-        for b in load_bets():
-            won = has_won(b)
-            recipients[b.agency] = recipients.get(b.agency, 0) + won
+            self.cv.notify_all()
 
-        for c in self.current:
-            client_id = self.__get_client_id(c.peer_addr)
-            winner_amount = recipients[client_id]
-            response = Response(winner_amount)
-            c.send(response)
+    def __handle_query(self, _: Query, client: Conn):
+        with self.cv:
+            self.cv.wait_for(lambda: not self.pending)
 
-    def __stop_listening(self):
-        self._keep_running = False
-        self.listener.stop()
+        client_addr = client.peer_addr
+        client_id = self.__get_client_id(client_addr)
+        if not client_id:
+            client.send(Ack(False))
+            return
+
+        client_results = self.results[client_id]
+        response = Response(len(client_results))
+        client.send(response)
 
     def stop(self, _signum, _frame):
         logging.info("action: stop | result: in_progress")
-        self.__stop_listening()
+        self._keep_running = False
+        self.listener.stop()
         for c in self.current:
             c.close()
 
