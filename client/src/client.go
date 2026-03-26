@@ -96,7 +96,9 @@ func (c *Client) Run() {
 	}
 
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v",
-		response.WinnerAmount)
+		len(response.Winners))
+
+	log.Infof("ganadores del sorteo: %v", response.Winners)
 }
 
 func (c *Client) sendBetAndRecvAck(bets messages.BetBatch) error {

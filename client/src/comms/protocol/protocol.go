@@ -9,4 +9,5 @@ const (
 	TYPE_FIN       = 0x05
 
 	LEN_WINNER_AMOUNT = 2
+	LEN_STR_SIZE      = 1
 )

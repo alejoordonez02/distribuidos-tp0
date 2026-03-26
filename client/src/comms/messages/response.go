@@ -1,11 +1,11 @@
 package messages
 
 type Response struct {
-	WinnerAmount int
+	Winners []string
 }
 
-func NewResponse(WinnerAmount int) Response {
-	response := Response{WinnerAmount}
+func NewResponse(Winners []string) Response {
+	response := Response{Winners}
 	return response
 }
 

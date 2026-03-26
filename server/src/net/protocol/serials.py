@@ -45,10 +45,14 @@ def __serialize_ack(ack: Ack) -> bytes:
 
 def __serialize_response(response: Response) -> bytes:
     serial = MsgType.TYPE_RESPONSE.value
-    serial_winner_amount = response.winner_amount.to_bytes(
+    winner_amount = len(response.winners)
+    serial_winner_amount = winner_amount.to_bytes(
         LEN_WINNER_AMOUNT, byteorder=BYTE_ORDER
     )
+
     serial += serial_winner_amount
+    for w in response.winners:
+        serial += __serialize_winner(w)
 
     return serial
 
@@ -96,6 +100,16 @@ def __deserialize_bet(serial: bytes) -> tuple[Bet, int]:
 
     bet = Bet(agency, first_name, last_name, document, birthdate, number)
     return bet, ptr
+
+
+def __serialize_winner(string: str) -> bytes:
+    serial = b""
+    serial_str = string.encode()
+    serial_len = len(serial_str).to_bytes(LEN_STR_SIZE, byteorder=BYTE_ORDER)
+    serial += serial_len
+    serial += serial_str
+
+    return serial
 
 
 def __deserialize_string(serial: bytes) -> tuple[str, int]:

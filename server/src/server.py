@@ -121,7 +121,7 @@ class Server:
             return
 
         client_results = self.results[client_id]
-        response = Response(len(client_results))
+        response = Response(list(client_results))
         client.send(response)
 
     def stop(self, _signum, _frame):

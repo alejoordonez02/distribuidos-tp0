@@ -52,8 +52,18 @@ func deserializeNack(_ []byte) (Ack, error) {
 }
 
 func deserializeResponse(serial []byte) Response {
-	WinnerAmount := int(binary.BigEndian.Uint16(serial[:protocol.LEN_WINNER_AMOUNT]))
-	response := Response{WinnerAmount}
+	ptr := 0
+	WinnerAmount := int(binary.BigEndian.Uint16(serial[ptr:protocol.LEN_WINNER_AMOUNT]))
+	ptr += protocol.LEN_WINNER_AMOUNT
+
+	Winners := make([]string, 0, WinnerAmount)
+	for i := 0; i < WinnerAmount; i++ {
+		winner, consumed := deserializeString(serial[ptr:])
+		Winners = append(Winners, winner)
+		ptr += consumed
+	}
+
+	response := Response{Winners}
 	return response
 }
 
@@ -74,4 +84,17 @@ func serializeStringInto(s string, buf *bytes.Buffer) {
 	serial_len := byte(uint8(len(s)))
 	buf.WriteByte(serial_len)
 	buf.WriteString(s)
+}
+
+// Deserializes a byte slice into a winner document.
+//
+//	Returns the deserialized document along with the bytes it consumed.
+func deserializeString(serial []byte) (string, int) {
+	// FIXME: I was not able to do serial[:LEN_STR_SIZE], so this becomes
+	// a bug if that constant changes.
+	len := int(serial[0])
+	len_total := protocol.LEN_STR_SIZE + len
+	str := string(serial[protocol.LEN_STR_SIZE:len_total])
+
+	return str, len_total
 }
