@@ -4,7 +4,8 @@ import unittest
 
 
 from src.storage import STORAGE_FILEPATH, store_bets, load_bets
-from src.bet import Bet, LOTTERY_WINNER_NUMBER, has_won
+from src.net.messages.bet import Bet
+from src.has_won import LOTTERY_WINNER_NUMBER, has_won
 
 
 class TestUtils(unittest.TestCase):
